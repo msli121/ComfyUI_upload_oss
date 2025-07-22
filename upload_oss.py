@@ -7,12 +7,12 @@ from PIL import Image
 import numpy as np
 
 # 配置日志
-log = logging.getLogger("comfyui-upload-oss")
-log.setLevel(logging.INFO)
+logger = logging.getLogger("comfyui-upload-oss")
+logger.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch = logging.StreamHandler()
 ch.setFormatter(formatter)
-log.addHandler(ch)
+logger.addHandler(ch)
 
 class UploadToOSS:
     """上传图片到OSS存储"""
@@ -56,7 +56,7 @@ class UploadToOSS:
             return (True,)
             
         except Exception as e:
-            log.error(f"上传过程发生错误: {str(e)}")
+            logger.error(f"上传过程发生错误: {str(e)}")
             raise
     
     def _tensor_to_pil(self, tensor):
@@ -71,7 +71,7 @@ class UploadToOSS:
         """执行实际的OSS上传"""
         for attempt in range(3):
             try:
-                log.info(f"[upload_to_oss] (第{attempt + 1}/3次) 上传到 OSS: {oss_put_url}")
+                logger.info(f"[upload_to_oss] (第{attempt + 1}/3次) 上传到 OSS: {oss_put_url}")
                 
                 # 设置请求超时时间（秒）
                 request_timeout = 60
@@ -86,16 +86,16 @@ class UploadToOSS:
                 # 检查HTTP状态码
                 response.raise_for_status()
                 
-                log.info(f"上传OSS完成：{oss_put_url}")
+                logger.info(f"上传OSS完成：{oss_put_url}")
                 return True, "success"
                 
             except Exception as e:
-                log.error(f"[upload_to_oss] 上传到 OSS 失败：{e}", exc_info=True)
+                logger.error(f"[upload_to_oss] 上传到 OSS 失败：{e}", exc_info=True)
                 
                 # 指数退避策略
-                wait_time = (2 ** attempt) + random.uniform(0, 1)
-                log.info(f"[upload_to_oss] 等待 {wait_time:.2f} 秒后重试...")
-                time.sleep(wait_time)
+                #wait_time = (2 ** attempt) + random.uniform(0, 1)
+                #logger.info(f"[upload_to_oss] 等待 {wait_time:.2f} 秒后重试...")
+                time.sleep(2)
                 
                 # 重置缓冲区指针
                 buffer.seek(0)
