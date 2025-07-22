@@ -1,11 +1,11 @@
-import requests
 import io
-import time
-import random
 import logging
-from PIL import Image
-import numpy as np
+import time
+from typing import Tuple
+
+import requests
 import torchvision.transforms.functional as F
+from PIL import Image
 
 # 配置日志
 logger = logging.getLogger("comfyui-upload-oss")
@@ -88,23 +88,25 @@ class UploadToOSS:
         # 转为PIL Image
         return F.to_pil_image(img_tensor)
 
-    def _upload_to_oss(self, oss_put_url, buffer):
+    def _upload_to_oss(self, oss_put_url, buffer) -> Tuple[bool, str]:
         """执行实际的OSS上传"""
         for attempt in range(3):
             try:
-                logger.info(f"[upload_to_oss] (第{attempt + 1}/3次) 上传到 OSS: {oss_put_url}")
+                logger.info(
+                    f"[upload_to_oss] (第{attempt + 1}/3次) 上传到 OSS: {oss_put_url} 文件大小: {len(buffer.getvalue())}")
 
                 # 设置请求超时时间（秒）
                 request_timeout = 60
-
+                headers = {
+                    "Content-Type": "image/*",
+                }
                 # 发送PUT请求到OSS
                 response = requests.put(
                     oss_put_url,
                     data=buffer,
-                    timeout=request_timeout
+                    headers=headers,
+                    timeout=request_timeout,
                 )
-
-                # 检查HTTP状态码
                 response.raise_for_status()
 
                 logger.info(f"上传OSS完成：{oss_put_url}")
@@ -112,12 +114,7 @@ class UploadToOSS:
 
             except Exception as e:
                 logger.error(f"[upload_to_oss] 上传到 OSS 失败：{e}", exc_info=True)
-
-                # 指数退避策略
-                # wait_time = (2 ** attempt) + random.uniform(0, 1)
-                # logger.info(f"[upload_to_oss] 等待 {wait_time:.2f} 秒后重试...")
-                time.sleep(2)
-
+                time.sleep(1)
                 # 重置缓冲区指针
                 buffer.seek(0)
 
